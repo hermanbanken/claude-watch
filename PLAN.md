@@ -261,6 +261,49 @@ drops `.claude/watch/*`, patches `.claude/settings.json`, and prints the
 environment variables to set (`RELAY_URL`, `RELAY_TOKEN`) and the network-allow
 domain. Ship it as a Claude Code **plugin / skill** so it's reusable.
 
+### Scaling problem: committing personal hooks to shared repos
+
+The hook bridge has a real fit problem **for cloud sessions specifically**:
+
+- **Cloud runs only repo-committed config.** User-level `~/.claude/settings.json`
+  hooks do **not** carry into a cloud session. So driving any repo from the watch
+  via cloud requires the hook plumbing to live *in that repo* — i.e. personal
+  notification infra committed into shared/team repos. That does not scale and is
+  socially awkward.
+- **Local is the opposite.** User-level hooks apply to **every** local repo with
+  **zero commits**. This is exactly why the prior-art projects are local: the
+  personal-multi-repo story is clean locally and awkward in the cloud.
+
+So the two original goals are in tension: *"no Mac, drive cloud from anywhere"*
+forces in-repo config, which is what doesn't scale for personal use.
+
+**Options:**
+
+1. **Personal → lean local.** User-level hooks across all repos, no commits.
+   Loses "no Mac running." Natural fit when the goal is one developer's workflow.
+2. **Platformize for the team** (makes committing a feature, not clutter):
+   - Distribute `claude-watch` as a **Claude Code plugin** from a marketplace. The
+     repo holds *one line* in `.claude/settings.json` (`enabledPlugins`) — generic
+     team infra, not personal scripts. Plugin hooks install at cloud session start.
+   - **Per-user secrets/config live in per-user environment variables**
+     (`CLAUDE_WATCH_RELAY_URL`, a per-user token) set in each colleague's own
+     cloud **environment config**, which is *not committed*. The hook is a no-op
+     for anyone who hasn't opted in.
+   - The **relay is multi-tenant**, routing each event to the right person's
+     devices by their token.
+   - Result: the repo only ever contains a generic, dormant, opt-in integration —
+     no personal data, no secrets — at the cost of getting that one declaration
+     merged (team buy-in = the "platformize" step).
+3. **Hybrid (recommended).** Use local user-level hooks for day-to-day across all
+   your repos *now* (no repo changes, no buy-in). Pursue the plugin + multi-tenant
+   relay path for the cloud/team story when there's appetite. Heuristic: **if it
+   isn't worth platformizing for colleagues, it isn't worth committing to shared
+   repos — stay local for those.**
+
+> Verify in Phase 0: that a plugin's hooks (declared via `enabledPlugins` and
+> installed from a marketplace at session start) actually fire in cloud sessions,
+> and that per-user environment variables are the right opt-in switch.
+
 ---
 
 ## 6. Relay service
