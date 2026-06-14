@@ -389,6 +389,34 @@ validates the single riskiest assumption before any app code.
 
 ---
 
+## Prior art: `shobhit99/claude-watch`
+
+An existing project ([github.com/shobhit99/claude-watch](https://github.com/shobhit99/claude-watch))
+implements much of what this plan calls the *local* transport, and validates the
+overall hook-bridge + SwiftUI approach. It is **LAN-only**:
+
+- **Mac bridge server** (Node) receives Claude Code hook events, streams to
+  clients over **SSE**, and **blocks on permission requests** until approved.
+- **Bonjour/mDNS** discovery; watch connects over Wi-Fi on the same network;
+  iPhone relays to the watch via **WCSession**.
+- SwiftUI iOS + watchOS, voice **input** via dictation, haptics, 6-digit pairing.
+
+| Capability | shobhit99/claude-watch | This plan |
+| --- | --- | --- |
+| Local Claude Code via hooks (LAN) | ✅ | Phase 3 |
+| Permission approvals from wrist | ✅ | ✅ |
+| Voice input (dictation) | ✅ | ✅ |
+| SwiftUI watch + iOS | ✅ | ✅ |
+| **Claude Code on the web (cloud) transport** | ❌ | ✅ Phase 1 |
+| **Works away from home (APNs, not LAN-bound)** | ❌ | ✅ |
+| **Read last state aloud (TTS out)** | ❌ | ✅ |
+
+**Implication.** The local/LAN transport is essentially already solved; the
+differentiated, unbuilt pieces are (1) the **cloud/web transport** with a remote
+relay + **APNs** so it works from anywhere, and (2) **audio readout** of state.
+A viable strategy is to fork/extend the above for local use and add those two
+layers, rather than rebuilding the LAN piece. Strategy decision pending.
+
 ## References
 
 - [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web)
