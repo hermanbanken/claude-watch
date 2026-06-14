@@ -436,6 +436,36 @@ truly remotely without a VPN back to that Mac.
 Strategy decision pending: fork/extend an existing LAN project and bolt on the
 cloud+APNs layer, vs. build fresh web-first.
 
+### Candidate: reverse-engineered web API for cloud sessions
+
+[`cyber-wojtek/Claude-API`](https://github.com/cyber-wojtek/Claude-API) is an
+unofficial async-Python wrapper that reverse-engineers the **claude.ai *chat*
+API** (list/resume/delete conversations, send messages, stream). Per its README
+it targets the chat interface, **not** the code sandbox (`claude.ai/code`), so
+out of the box it does **not** read or resume Claude Code cloud coding sessions.
+
+What it proves is the **technique**: the web/iOS/Android clients all talk to an
+internal backend, and the same approach pointed at the `claude.ai/code`
+endpoints would give exactly what the official API lacks — list cloud sessions,
+read the latest turn, send a message, resume — *directly*. That would let us drop
+the hook-bridge + `Stop`-inject mechanism for the cloud transport.
+
+**Tradeoff — high reward, high risk.** Treat as a candidate, not the default:
+
+| | Hook-bridge (default) | Reverse-engineered web API |
+| --- | --- | --- |
+| Supported surface | ✅ documented hooks | ❌ unofficial, ToS risk |
+| Stability | ✅ | ❌ internal API changes without notice |
+| Auth exposure | scoped `RELAY_TOKEN` | ⚠️ **`sessionKey` = full account access** on relay + watch |
+| Covers cloud `/code` today | ✅ | ❌ (chat only; would need new capture work) |
+| Cleanliness if it worked | hooks are a workaround | ✅ direct read/send/resume |
+
+The **`sessionKey` exposure is the deciding concern**: a long-lived cookie with
+full account access living on a relay and a watch is a much larger blast radius
+than the scoped token in the hook design. Acceptable for a personal/experimental
+build where the owner accepts that risk; not a foundation to bake in without an
+explicit decision to do so.
+
 ## References
 
 - [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web)
