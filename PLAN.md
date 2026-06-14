@@ -482,6 +482,42 @@ breakage), and the `/code` endpoints **still need to be captured** (the existing
 library covers chat only). Good for a personal/experimental build that accepts
 those; the hook-only path stays fully on supported surfaces if you don't.
 
+#### The specific ToS conflict (and why it's not just theoretical)
+
+Claude Code on the web runs on a **Pro/Max subscription**, governed by the
+**Consumer Terms of Service** (not the Commercial Terms, which cover API keys).
+The Consumer Terms permit automated access **only through an Anthropic API key**.
+Driving a `claude.ai/code` session with a captured `sessionKey` conflicts with
+**Consumer Terms §3 "Use of our Services"**:
+
+- **Automated access (direct hit):** *"Except when you are accessing our Services
+  via an Anthropic API Key or where we otherwise explicitly permit it, to access
+  the Services through automated or non-human means, whether through a bot,
+  script, or otherwise."*
+- **Reverse engineering:** *"To decompile, reverse engineer, disassemble, or
+  otherwise reduce the Services to human-readable form…"*
+- **Scraping:** *"To crawl, scrape, or otherwise harvest data or information from
+  the Services other than as permitted…"*
+- **Credentials:** account credentials may not be shared/made available; using
+  the `sessionKey` outside the official client is in tension with this.
+
+**Enforcement precedent:** in early 2026 Anthropic blocked third-party
+"harnesses" (OpenClaw/OpenCode) that piloted users' *subscription* accounts via
+web/OAuth auth to drive automated workflows. A watch app driving a `/code`
+subscription session via a captured `sessionKey` **is** that pattern, so the
+realistic risk is **account suspension**, not merely breakage.
+
+**Consequence for strategy:** the hook-bridge default stays clean — hooks are a
+first-party feature, the relay carries only notification pings, and model access
+happens inside the sanctioned Claude Code session, not via an external script.
+The only fully sanctioned programmatic access is an **API key under the
+Commercial Terms**, which is a *separate* agent — not "drive my existing
+subscription cloud session."
+
+Sources: Anthropic [Consumer Terms](https://www.anthropic.com/legal/consumer-terms),
+[Usage Policy](https://www.anthropic.com/legal/aup); enforcement reporting
+([VentureBeat](https://venturebeat.com/technology/anthropic-cracks-down-on-unauthorized-claude-usage-by-third-party-harnesses)).
+
 ## References
 
 - [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web)
