@@ -456,15 +456,31 @@ the hook-bridge + `Stop`-inject mechanism for the cloud transport.
 | --- | --- | --- |
 | Supported surface | ✅ documented hooks | ❌ unofficial, ToS risk |
 | Stability | ✅ | ❌ internal API changes without notice |
-| Auth exposure | scoped `RELAY_TOKEN` | ⚠️ **`sessionKey` = full account access** on relay + watch |
+| Auth exposure | scoped `RELAY_TOKEN` | `sessionKey` **on-device only** (Keychain) — see below |
 | Covers cloud `/code` today | ✅ | ❌ (chat only; would need new capture work) |
 | Cleanliness if it worked | hooks are a workaround | ✅ direct read/send/resume |
 
-The **`sessionKey` exposure is the deciding concern**: a long-lived cookie with
-full account access living on a relay and a watch is a much larger blast radius
-than the scoped token in the hook design. Acceptable for a personal/experimental
-build where the owner accepts that risk; not a foundation to bake in without an
-explicit decision to do so.
+**Keep the `sessionKey` on-device, never on the relay.** The credential lives in
+the iOS app's Keychain (optionally iPhone-only, with the watch proxying through
+it via WCSession so the watch stays out of the credential path). This makes the
+blast radius "device compromise = full account" — the *same* exposure the
+official Claude iOS app already carries — rather than "relay compromise = full
+account." That resolves the main security objection.
+
+This yields a **hybrid architecture** that is arguably the best of both:
+
+- **Relay = notifications only.** Lightweight "agent needs you" pings from the
+  repo hook (scoped `RELAY_TOKEN`) → APNs push. No `sessionKey`, no session
+  content. Still required because timely background notifications can't come from
+  device-side polling alone.
+- **Device = all session I/O.** Holds `sessionKey` in Keychain and calls the
+  `/code` API directly to read the latest turn, speak it (TTS), and send/resume
+  with the voice directive.
+
+Residual risks that remain regardless: it's an **unofficial API** (ToS +
+breakage), and the `/code` endpoints **still need to be captured** (the existing
+library covers chat only). Good for a personal/experimental build that accepts
+those; the hook-only path stays fully on supported surfaces if you don't.
 
 ## References
 
